@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "start": "ts-node index.ts",
+    "build": "tsc",
     "check": "eslint ."
   },
   "keywords": [],
