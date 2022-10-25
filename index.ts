@@ -1,4 +1,4 @@
-import { UDPServer } from './src/udp-server';
+import { UDPServer } from "./src/udp-server";
 
 
 const server = new UDPServer(1234);

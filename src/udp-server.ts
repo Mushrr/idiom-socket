@@ -1,4 +1,4 @@
-import { createSocket, RemoteInfo, Socket } from 'node:dgram';
+import { createSocket, RemoteInfo, Socket } from "node:dgram";
 
 interface customer {
     ip: string,
@@ -45,9 +45,9 @@ export class UDPServer implements UDPServerInterface {
 
     listen() {
         this.socket = createSocket({
-            type: 'udp4',
+            type: "udp4",
         })
-        this.socket.on('message', (message, rinfo) => {
+        this.socket.on("message", (message, rinfo) => {
             const msg = message.toString();
             console.log(`[${rinfo.address}:${rinfo.port} ${rinfo.size}] - ${msg}`);
             this.addCustomer(rinfo);

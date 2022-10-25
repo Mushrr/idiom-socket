@@ -22,10 +22,10 @@ export class UDPClient implements UDPClientInterface {
     
     listen() {
         this.socket = createSocket({ type: "udp4", });
-        this.socket.on('message', (msg) => {
+        this.socket.on("message", (msg) => {
             console.log(msg.toString());
         })
-        process.stdin.on('data', (buffer) => {
+        process.stdin.on("data", (buffer) => {
             this.socket?.send(buffer, this.targetport, this.ip);
         })
     }
