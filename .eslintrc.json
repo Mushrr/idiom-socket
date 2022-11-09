@@ -27,7 +27,7 @@
         "no-multi-spaces": "error", // 禁止使用多个空格
         "no-buffer-constructor": "error", // 禁用buffer构造函数
         "camelcase": "warn", // 驼峰命名
-        "quotes": ["error", "double"] 
+        "quotes": ["error", "double"]
     },
     "globals": {
         "__dirname": "readonly",
