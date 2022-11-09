@@ -3,6 +3,7 @@ import { PlayerResource, RoomResource } from "./Resource";
 import { randomStr } from "mushr";
 import { Socket } from "socket.io"
 import Room from "./Room"
+import { CreateRoomConfig } from './Cloud';
 
 interface PlayerInterface {
     // 用户的唯一标识
@@ -42,6 +43,83 @@ export default class Player extends EventEmitter implements PlayerInterface {
     // 当当前用户socket出现错误，或者断开连接，或者其他状况的时候，可以立即通知ROOM
     // 用户的自定义属性
     [propname: string]: object | string | number | boolean | undefined;
+
+    static clearPlayerSocket(player: Player) {
+        // 清除当前用户的所有事件
+        player.socket.removeAllListeners();
+    }
+
+    // 玩家socket的初始化，对待玩家的事件进行监听
+    static initPlayerSocket(player: Player, room: Room) {
+        // 基础生命状态
+        player.socket.on("error", (err) => {
+            console.error(`[ROOM: ${room.roomName}]Player ${player.playerName} socket error ${err}`);
+        })
+        player.socket.on("disconnected", () => {
+            // 玩家退出
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} disconnected`);
+            room.cloud.emit("player:disconnected", player); // 通知云已经有玩家退出了
+            player.exit();
+        })
+        player.socket.on("ping", () => {
+            // 玩家ping
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} ping`);
+        })
+        player.socket.on("reconnect_attempt", (attempt) => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} reconnect attempt ${attempt}`);
+        })
+        player.socket.on("reconnect_error", (err) => {
+            console.error(`[ROOM: ${room.roomName}]Player ${player.playerName} reconnect error ${err}`);
+        })
+        player.socket.on("reconnect_failed", () => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} reconnect failed`);
+        })
+
+
+        // 特殊事件
+        player.socket.on("player:exit", () => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} exit`);
+            room.cloud.emit("player:exit", player); // 通知云已经有玩家退出了
+            player.exit();
+        })
+        player.socket.on("player:chat", (...message) => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} chat ${JSON.stringify(message)}`);
+            room.emit("player:chat", player, ...message); // 用户消息传递
+        })
+
+        player.socket.on("player:data", (chunk) => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} data ${chunk}`);
+            room.emit("player:data", player, chunk); // 数据上报给room
+        })
+
+        player.socket.on("player:rename", (name) => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} rename ${name}`);
+            player.playerName = name;
+            room.emit("player:rename", player, name); // 用户重命名
+        })
+
+        player.socket.on("player:join", (roomName) => {
+            let change = false;
+            player.currentRoom.cloud.rooms.forEach(room => {
+                if (room.roomName === roomName) {
+                    change = true;
+                    player.switchTo(room); //  用户切换房间
+                }
+            })
+            if (!change) {
+                player.socket.emit("error", `${roomName} room not found!!!`);
+            }
+        })
+
+        player.socket.on("room:get", () => {
+            player.socket.emit("room:get", player.currentRoom.cloud.getRoomInfo());
+        })
+
+        player.socket.on("room:create", (config: CreateRoomConfig) => {
+            room.emit("room:create", config);
+        })
+    }
+
     constructor(playerName: string, socket: Socket, currentRoom: Room) {
         super(); // 允许在player 上添加事件以触发响应的响应
         this.playerId = randomStr(32);
@@ -52,26 +130,43 @@ export default class Player extends EventEmitter implements PlayerInterface {
         // socket 连接，方便服务端接受来自客户端的消息，也方便服务端返回消息.
         // 客户端write 服务端on("data") 接受
         // 客户端on("data") 服务端write 发送
-        this.socket = socket; 
+        this.socket = socket;
+        Player.initPlayerSocket(this, currentRoom); // 初始化一下当前用户的事件
     }
 
     // 资源从buffer中生成
     // 生成的资源将会直接抛给ROOM，ROOM将会管理这个资源的
-    createResource(type: "player" | "room", resource: Buffer, callback: (err: Error, data: any) => void): PlayerResource | RoomResource {
-        // 依据服务端接收到的buffer，如果前面标志位是一个资源标志的话，就会丢入到这个里生成一个资源实体.
-        // TODO 生成资源，返回
-
-        console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} create resource ${type}`);
-    }
+    // createResource(type: "player" | "room", resource: Buffer, callback: (err: Error, data: any) => void): PlayerResource | RoomResource {
+    //     // 依据服务端接收到的buffer，如果前面标志位是一个资源标志的话，就会丢入到这个里生成一个资源实体.
+    //     // TODO 生成资源，返回
+        
+    //     console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} create resource ${type}`);
+    // }
     // 用户状态改变
     changeStatus(status: "connected" | "disconnected" | "tle" | "restrict" | "unknown") {
         this.status = status;
         console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} status changed to ${status}`);
     }
+
+    switchTo(room: Room) {
+        // 用户切换房间
+        this.socket.leave(this.currentRoom.roomName);
+        this.socket.join(room.roomName);
+        this.currentRoom = room;
+
+        Player.clearPlayerSocket(this); // 清除当前用户的事件
+        Player.initPlayerSocket(this, room); // 初始化一下当前用户的事件
+        room.addPlayer(this); // 加入
+        console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} switch to ${room.roomName}`);
+    }
+
+    // userNameChange
+
     // 退出
     exit() {
         // 用户退出房间
         this.currentRoom.removePlayer(this);
+        this.switchTo(this.currentRoom.cloud.mainHall!);
         console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} has quit the room`);
     }
 }
