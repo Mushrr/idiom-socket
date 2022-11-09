@@ -119,27 +119,3 @@ export default class Cloud extends Server implements CloudInterface {
     }
 
 }
-
-
-// export class Cloud extends EventEmitter implements CloudInterface {
-//     // 基础信息
-//     port: number;
-//     host: string;
-//     rooms: Room[];
-//     // 云socket, 接受来自各方的数据，下发到各个ROOM中
-//     cloudSocket: CloudSocket;
-//     // 云的状态
-//     constructor(config: CloudConfig) {
-//         super();
-//         this.port = config.port;
-//         this.host = "localhost";
-//         this.rooms = [];
-//         this.cloudSocket = new CloudSocket(); // 建立一个socket
-//     }
-
-//     // 监听
-//     listen(port: number) {
-//         this.cloudSocket.listen(port);
-//         console.log("cloud is listening on port " + port);
-//     }
-// }
