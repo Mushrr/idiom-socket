@@ -1,6 +1,9 @@
-import { UDPServer } from "./src/udp-server";
+import Cloud from "./src/Cloud";
+
+const cloud = new Cloud({
+    port: 3000
+});
 
 
-const server = new UDPServer(1234);
 
-server.listen();
+cloud.listen(3000);

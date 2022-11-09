@@ -1,6 +1,13 @@
-### Idiom's Robust Socket Support for Multi-user online learning and playing.
+#### 在思考
 
-
-
-###### Simplest UDP Server Example
-![](./screenshots/udp-example.gif)
+1. 如何创建一个房间？
+客户端可以先连接到`/`路径，然后发送room:create 传入当前一个房间名
+如此，在服务端将会触发一个函数`initializaARoom(roomName);` 这个房间将会使用`new Room`创建
+并且把master自动赋值过去
+2. 如果查看当前所有房间?
+客户端在`/`路径下，发送room:get 方法得到当前所有的房间的索引，并且在服务端会编制这个索引为JSON格式方便
+前端直接查看，同时如果用户点击了某个房间，前端可以发送 room:join事件，服务端会自动把用户转移到这个房间里面来
+3. 用户如何创建？
+在连接之初就会封装当前用户，连接的一瞬间就会发送当前用户的id，根据这个id可以生成一个用户，此后的操作就基于这个用户进行
+4. 房间内部如何组织？
+用户加入对应房间的时候，对应的房间会保存此用户的id信息，当用户触发某些事件的时候，房间可以直接接收到。

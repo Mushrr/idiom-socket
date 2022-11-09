@@ -1,5 +1,15 @@
-import { UDPClient } from "./src/udp-client";
+import { Manager } from "socket.io-client";
 
-const client = new UDPClient("127.0.0.1", (Math.floor(Math.random() * 10000)), 1234);
+const manager = new Manager("http://localhost:3000");
 
-client.listen();
+const socket = manager.socket("/room");
+
+socket.on("connect", () => {
+    // 连接上了
+    socket.emit("room:create", "xxx-xxxxx-xxx-xxxx");
+
+})
+
+socket.on("data", (chunk) => {
+    console.log(chunk.toString());
+})

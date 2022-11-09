@@ -102,7 +102,7 @@
     "index.ts",
     "client.ts",
     "src/**/*.ts"
-  ],
+, "client2.ts", "client2.ts"  ],
   "exclude": [
     "node_modules/**/*"
   ]
