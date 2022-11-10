@@ -5,3 +5,5 @@ const cloud = new Cloud({
 });
 
 cloud.listen(3000);
+
+// 创建一个cloud 并且绑定在 3000 端口

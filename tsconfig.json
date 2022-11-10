@@ -100,9 +100,9 @@
   },
   "include": [
     "index.ts",
-    "client.ts",
+    "client1.tss",
     "src/**/*.ts"
-, "client2.ts", "client2.ts"  ],
+, "test/client2.ts", "test/client2.ts"  ],
   "exclude": [
     "node_modules/**/*"
   ]
