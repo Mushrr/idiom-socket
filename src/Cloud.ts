@@ -33,6 +33,8 @@ export interface CreateRoomConfig {
     roomName: string,
     maxPlayers: number,
     playerId: string,
+    key: number | null,
+    needKey: boolean
 }
 
 export default class Cloud extends Server implements CloudInterface {
@@ -51,7 +53,7 @@ export default class Cloud extends Server implements CloudInterface {
 
             console.log(`[${new Date().toLocaleString()}] - New Room Created: ${namespace.name}`);
         })
-        const mainHall = new Room("大厅", 100, null, cloud); // 初始化一个大厅
+        const mainHall = new Room("大厅", 100, null, null, cloud); // 初始化一个大厅
         cloud.mainHall = mainHall; // 房间初始化
 
         // 在大厅的用户可以创建房间
@@ -62,6 +64,7 @@ export default class Cloud extends Server implements CloudInterface {
             for (const player of cloud.players) {
                 if (player.playerId === config.playerId) {
                     master = player;
+                    // 掌权者
                     break;
                 }
             }
@@ -69,8 +72,8 @@ export default class Cloud extends Server implements CloudInterface {
                 // 没有找到主节点
                 console.error(`[${new Date().toLocaleString()}] - Player ${config.playerId} not found`);
             } else {
-                const room = new Room(config.roomName, config.maxPlayers, master, cloud);
-                cloud.rooms.push(room);
+                const room = new Room(config.roomName, config.maxPlayers, config.key, master, cloud); // 只允许使用数字作为密码
+                cloud.rooms.push(room); // 房间创建完毕
             }
         })
 
@@ -98,6 +101,7 @@ export default class Cloud extends Server implements CloudInterface {
     }
 
     getRoomInfo() {
+        console.log(`[${new Date().toLocaleString()}] - Room Info: ${this.rooms.length}`);
         const roomInfo = this.rooms.map((room) => {
             return {
                 name: room.roomName,
@@ -109,6 +113,7 @@ export default class Cloud extends Server implements CloudInterface {
     }
 
     getPlayerInfo() {
+        console.log(`[${new Date().toLocaleString()}] - Room Info: ${this.rooms.length}`);
         const playerInfo = this.players.map((player) => {
             return {
                 name: player.playerName,

@@ -2,7 +2,7 @@ import { EventEmitter } from 'stream';
 import { PlayerResource, RoomResource } from "./Resource";
 import { randomStr } from "mushr";
 import { Socket } from "socket.io"
-import Room from "./Room"
+import Room, { RoomJoinData } from "./Room"
 import { CreateRoomConfig } from './Cloud';
 
 interface PlayerInterface {
@@ -23,8 +23,6 @@ interface PlayerInterface {
     // 用户的自定义属性
     [propname: string]: object | string | number | boolean | undefined;
 }
-
-
 
 export default class Player extends EventEmitter implements PlayerInterface {
     // 用户的唯一标识
@@ -82,42 +80,51 @@ export default class Player extends EventEmitter implements PlayerInterface {
             room.cloud.emit("player:exit", player); // 通知云已经有玩家退出了
             player.exit();
         })
-        player.socket.on("player:chat", (...message) => {
-            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} chat ${JSON.stringify(message)}`);
-            room.emit("player:chat", player, ...message); // 用户消息传递
-        })
-
-        player.socket.on("player:data", (chunk) => {
-            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} data ${chunk}`);
-            room.emit("player:data", player, chunk); // 数据上报给room
-        })
-
+        // 重命名, 必须要求加入的用户重命名!
         player.socket.on("player:rename", (name) => {
             console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} rename ${name}`);
             player.playerName = name;
             room.emit("player:rename", player, name); // 用户重命名
         })
-
-        player.socket.on("player:join", (roomName) => {
+        player.socket.on("player:whoami", () => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} whoami`);
+            player.socket.emit("player:whoami", {
+                playerId: player.playerId,
+                playerName: player.playerName
+            });
+        })
+        // 加入事件
+        player.socket.on("player:join", (roomJoinData: RoomJoinData) => {
             let change = false;
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} is trying to join ${roomJoinData.roomName}`);
             player.currentRoom.cloud.rooms.forEach(room => {
-                if (room.roomName === roomName) {
+                // 如果验证通过才能加入
+                if (room.roomId === roomJoinData.roomId && room.key === roomJoinData.key) {
                     change = true;
                     player.switchTo(room); //  用户切换房间
                 }
             })
             if (!change) {
-                player.socket.emit("error", `${roomName} room not found!!!`);
+                // 房间级别的错误
+                player.socket.emit("room:error", `${roomJoinData.roomId} room not found or key error!!!`, roomJoinData);
+                // 返回错误信息
             }
         })
 
+        // 用户可以直接获取房间信息
         player.socket.on("room:get", () => {
             player.socket.emit("room:get", player.currentRoom.cloud.getRoomInfo());
         })
 
+        // 用户可以直接创建房间
         player.socket.on("room:create", (config: CreateRoomConfig) => {
             room.emit("room:create", config);
         })
+
+
+        // 使用房间添加对用户行为的监听
+
+        room.initPlayer(player);
     }
 
     constructor(playerName: string, socket: Socket, currentRoom: Room) {
@@ -161,7 +168,6 @@ export default class Player extends EventEmitter implements PlayerInterface {
     }
 
     // userNameChange
-
     // 退出
     exit() {
         // 用户退出房间
