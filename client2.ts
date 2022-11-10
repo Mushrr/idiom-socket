@@ -14,6 +14,6 @@ socket.emit("player:chat", {
 })
 
 
-socket.on("player:chat", (message) => {
+socket.on("player:chat", (...message) => {
     console.log(message);
 })
