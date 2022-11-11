@@ -3,6 +3,8 @@ import { EventEmitter } from 'stream';
 import Room from "./Room";
 import Player from "./Player";
 import { randomStr } from "mushr";
+import TextShareRoom from "./rooms/text-share-room";
+import { TextResource } from "./rooms/text-resource";
 // 单例的云服务,用户可以向云服务发送请求,云会创建一个房间，并将管理权返还给用户
 
 interface CloudInterface extends EventEmitter {
@@ -34,7 +36,8 @@ export interface CreateRoomConfig {
     maxPlayers: number,
     playerId: string,
     key: number | null,
-    needKey: boolean
+    needKey: boolean,
+    type: "text" | "canvas"
 }
 
 export default class Cloud extends Server implements CloudInterface {
@@ -72,8 +75,17 @@ export default class Cloud extends Server implements CloudInterface {
                 // 没有找到主节点
                 console.error(`[${new Date().toLocaleString()}] - Player ${config.playerId} not found`);
             } else {
-                const room = new Room(config.roomName, config.maxPlayers, config.key, master, cloud); // 只允许使用数字作为密码
-                cloud.rooms.push(room); // 房间创建完毕
+                let room: Room;
+                switch (config.type) {
+                    case "text":
+                        const text = new TextResource("", "all", mainHall); // 初始化空文本
+                        room = new TextShareRoom(config.roomName, config.maxPlayers, config.key, master, cloud, text); // 只允许使用数字作为密码
+                        text.changeRoom(room); // 房间修改
+                        cloud.rooms.push(room); // 房间创建完毕
+                        break;
+                    case "canvas":
+                        console.log(`[${new Date().toLocaleString()}] - Canvas Room not supported yet`);
+                }
             }
         })
 
@@ -107,6 +119,8 @@ export default class Cloud extends Server implements CloudInterface {
                 name: room.roomName,
                 id: room.roomId,
                 maxPlayers: room.maxPlayers,
+                master: (room.master as Player).playerName, // 房主的名字
+                type: room.type, // 返回房间类型
             }
         })
         return roomInfo;

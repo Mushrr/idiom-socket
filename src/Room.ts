@@ -94,8 +94,6 @@ export default class Room extends EventEmitter implements RoomInterface {
                 }
             })
         })
-
-
     }
 
     /**
@@ -124,8 +122,7 @@ export default class Room extends EventEmitter implements RoomInterface {
     // 处理资源
     // handle resource
     handleResource(resource: PlayerResource | RoomResource) {
-        this.resources.push(resource);
-        this.emit("resource:handle", resource); // 资源加载，资源触发
+        
     }
 
     // utils

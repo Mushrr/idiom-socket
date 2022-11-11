@@ -1,7 +1,9 @@
 import { randomStr } from 'mushr';
+import { EventEmitter } from 'stream';
 // 资源类型
 import Player from "./Player";
 import Room from "./Room";
+import TextShareRoom from './rooms/text-share-room';
 
 interface ResourceInterface {
     // 资源的唯一标识
@@ -60,7 +62,7 @@ export class PlayerResource implements PlayerResourceInterface {
     }
 }
 
-export class RoomResource implements RoomResourceInterface {
+export class RoomResource extends EventEmitter implements RoomResourceInterface {
     // 资源的唯一标识
     resourceId: string;
     // 资源的类型
@@ -80,6 +82,7 @@ export class RoomResource implements RoomResourceInterface {
     resourceSource: Room;
 
     constructor(resourceType: "text" | "image" | "json" | "buffer", resourceContent: string | Buffer, resourceDestination: Player | string | "all", resourceSource: Room) {
+        super();
         this.resourceId = randomStr(64);
         this.resourceType = resourceType;
         this.resourceContent = resourceContent;
@@ -89,3 +92,40 @@ export class RoomResource implements RoomResourceInterface {
     }
 }
 
+export class TextResource extends RoomResource {
+
+    constructor(resourceContent: string, resourceDestination: Player | string | "all", resourceSource: Room) {
+        super("text", resourceContent, resourceDestination, resourceSource);
+
+        // 初始化资源
+        resourceSource.handleResource(this); // 资源移交给房间处理
+    }
+
+    // 改变房间
+    changeRoom(room: Room) {
+        this.resourceSource = room;
+    }
+
+    load() {
+        for (let player of this.resourceSource.players) {
+            if (this.resourceDestination === "all" || this.resourceDestination === player) {
+                // 资源发送给各个用户
+                player.socket.emit("resource:load",
+                    this,
+                    (this.resourceSource as TextShareRoom).archive.version
+                );
+            }
+        }
+    }
+    beforeUpdate() {
+        
+    }
+
+    update() {
+        this.load(); // 继续发往各个用户
+    }
+
+    afterUpdate() {
+
+    }
+}
