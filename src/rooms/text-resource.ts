@@ -18,11 +18,12 @@ export class TextResource extends RoomResource {
     }
 
     load() {
+        console.log("正在分发");
         for (let player of this.resourceSource.players) {
             if (this.resourceDestination === "all" || this.resourceDestination === player) {
                 // 资源发送给各个用户
                 player.socket.emit("resource:load",
-                    this,
+                    this.resourceContent,
                     (this.resourceSource as TextShareRoom).archive.version
                 );
             }
@@ -32,8 +33,9 @@ export class TextResource extends RoomResource {
         
     }
 
-    update(content: Buffer) {
+    update(content: Buffer | string) {
         this.resourceContent = content;
+        console.log(`[Resource] ${content} updated`);
         this.load(); // 继续发往各个用户
     }
 

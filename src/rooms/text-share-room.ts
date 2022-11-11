@@ -13,7 +13,7 @@ export default class TextShareRoom extends Room {
     text: RoomResource;
     archive: Archive;
     autoArchive: boolean;
-    
+    type: string = "text";
     constructor(roomName: string, maxPlayers: number, key: number | null, master: Player | null, cloud: Cloud, text: RoomResource) {
         super(roomName, maxPlayers, key, master, cloud); // 初始化
         this.text = text;
@@ -22,11 +22,7 @@ export default class TextShareRoom extends Room {
         // 创建一个资源
         // 资源有自己的生命周期
         // 加载 -> 更新之前 -> 更新之后 -> 保存 -> 退出
-    }
 
-    handleResource(resource: PlayerResource | RoomResource): void {
-        this.resources.push(resource); // 资源加入
-        this.emit("resource:init", resource); // 资源加载，资源触发
 
         // 接受来自客户端的反馈
         this.on("resource:received", (playerCheckMessage: playerCheck) => {
@@ -35,17 +31,25 @@ export default class TextShareRoom extends Room {
 
         // 接受来自用户的更新
         this.on("resource:update", (content) => {
+            console.log(`[Room] ${this.roomId}:${this.roomName} received update`);
             (this.text as TextResource).update(content); // 更新资源
         })
 
-        
+
         this.on("master:start", () => {
+            console.log(`[Room] ${this.roomId}:${this.roomName} start`);
             (this.text as TextResource).load(); // 资源加载
         })
 
         this.on("master:autoarchive", () => {
             this.autoArchive = !this.autoArchive;
         })
+
+    }
+
+    handleResource(resource: PlayerResource | RoomResource): void {
+        this.resources.push(resource); // 资源加入
+        this.emit("resource:init", resource); // 资源加载，资源触发
     }
 }
 

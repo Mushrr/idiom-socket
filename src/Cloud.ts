@@ -5,6 +5,7 @@ import Player from "./Player";
 import { randomStr } from "mushr";
 import TextShareRoom from "./rooms/text-share-room";
 import { TextResource } from "./rooms/text-resource";
+import { ServerOptions } from "socket.io";
 // 单例的云服务,用户可以向云服务发送请求,云会创建一个房间，并将管理权返还给用户
 
 interface CloudInterface extends EventEmitter {
@@ -80,8 +81,21 @@ export default class Cloud extends Server implements CloudInterface {
                     case "text":
                         const text = new TextResource("", "all", mainHall); // 初始化空文本
                         room = new TextShareRoom(config.roomName, config.maxPlayers, config.key, master, cloud, text); // 只允许使用数字作为密码
+                        console.log(room);
                         text.changeRoom(room); // 房间修改
                         cloud.rooms.push(room); // 房间创建完毕
+                        master.switchTo(room); // 主节点切换到新的房间
+                        master.socket.emit("room:create", {
+                            success: true,
+                            roomInfo: {
+                                name: room.roomName,
+                                id: room.roomId,
+                                maxPlayers: room.maxPlayers,
+                                type: room.type,
+                                key: room.key,
+                                needKey: room.needKey
+                            }
+                        })
                         break;
                     case "canvas":
                         console.log(`[${new Date().toLocaleString()}] - Canvas Room not supported yet`);
@@ -103,9 +117,11 @@ export default class Cloud extends Server implements CloudInterface {
         })
     }
 
-    constructor(config: CloudConfig) {
-        super();
-        this.config = config;
+    constructor(config: Partial<ServerOptions>) {
+        super(config);
+        this.config = {
+            port: 3000,
+        };
         this.rooms = []; // 这个实体将会在用户创建房间的时候自动封装然后加入到这个里面
         this.players = [];
         this.mainHall = null;
@@ -121,6 +137,7 @@ export default class Cloud extends Server implements CloudInterface {
                 maxPlayers: room.maxPlayers,
                 master: (room.master as Player).playerName, // 房主的名字
                 type: room.type, // 返回房间类型
+                needKey: room.needKey, // 是否需要密码
             }
         })
         return roomInfo;

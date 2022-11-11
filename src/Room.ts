@@ -60,6 +60,7 @@ export default class Room extends EventEmitter implements RoomInterface {
     createTime: Date;
     // 房间资源
     resources: (PlayerResource | RoomResource)[];
+    // type
     // 房间的自定义属性
     [propname: string]: string | number | boolean | object | null;
 
@@ -81,7 +82,6 @@ export default class Room extends EventEmitter implements RoomInterface {
             this.key = null;
             this.needKey = false;
         }
-
         // 此处借助 cloud 初始化这个房间
 
         this.cloud.of(this.roomId).on("connection", (socket) => {
@@ -93,6 +93,25 @@ export default class Room extends EventEmitter implements RoomInterface {
                     this.addPlayer(player);
                 }
             })
+        })
+
+        this.on("player:join", (player) => {
+            // 用户加入之后有很多事情可以做
+            const p = this.findPlayer(player.playerId, "playerId");
+            
+            if (p) {
+                // 向所有用户同步一下消息
+                const allUsers = this.players.map(player => {
+                    return {
+                        playerId: player.playerId,
+                        playerName: player.playerName
+                    }
+                })
+
+                for (let player of this.players) {
+                    player.socket.emit("room:getuser", allUsers);
+                }
+            }
         })
     }
 
@@ -116,7 +135,9 @@ export default class Room extends EventEmitter implements RoomInterface {
     // 玩家加入
     addPlayer(player: Player) {
         this.players.push(player);
-        this.emit("player:join", player); // 玩家加入
+        this.emit("player:join", {
+            playerId: player.playerId,
+        }); // 玩家加入
     }
 
     // 处理资源
@@ -156,12 +177,17 @@ export default class Room extends EventEmitter implements RoomInterface {
                 p.socket.emit("master:bordcast", message); // 广播到所有用户
             })
         })
+        player.socket.on("master:start", () => {
+            this.emit("master:start"); //  直接通过room 广播
+        })
     }
 
     // 等待被重载
     // 初始化简单用户
     initSimplePlayer(player: Player) {
-
+        player.socket.on("resource:update", (data) => {
+            this.emit("resource:update", data);
+        })
     }
 
     // 初始化进入这个房间的用户

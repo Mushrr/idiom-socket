@@ -1,7 +1,10 @@
 import Cloud from "./src/Cloud";
 
 const cloud = new Cloud({
-    port: 3000
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"],
+    }
 });
 
 cloud.listen(3000);

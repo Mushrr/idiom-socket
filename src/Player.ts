@@ -102,6 +102,12 @@ export default class Player extends EventEmitter implements PlayerInterface {
                 if (room.roomId === roomJoinData.roomId && room.key === roomJoinData.key) {
                     change = true;
                     player.switchTo(room); //  用户切换房间
+                    player.socket.emit("player:join", {
+                        roomId: room.roomId,
+                        roomName: room.roomName,
+                        roomKey: room.key,
+                        roomStatus: room.status,
+                    });
                 }
             })
             if (!change) {
@@ -111,6 +117,25 @@ export default class Player extends EventEmitter implements PlayerInterface {
             }
         })
 
+        player.socket.on("room:getuser", ({playerId}) => {
+            // 连接成功
+            const allPlayers = player.currentRoom.players.map(p => ({
+                playerName: p.playerName,
+                playerId: p.playerId,
+            }));
+
+            for (let p of player.currentRoom.players) {
+                if (p.playerId === playerId) {
+                    p.socket.emit("room:getuser", {
+                        allPlayers
+                    })
+                    break;
+                }
+            }
+        })
+
+        
+
         // 用户可以直接获取房间信息
         player.socket.on("room:get", () => {
             player.socket.emit("room:get", player.currentRoom.cloud.getRoomInfo());
@@ -118,11 +143,12 @@ export default class Player extends EventEmitter implements PlayerInterface {
 
         // 用户可以直接创建房间
         player.socket.on("room:create", (config: CreateRoomConfig) => {
+            console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} is trying to create room ${config.roomName}`);
             room.emit("room:create", config);
         })
 
-
         // 使用房间添加对用户行为的监听
+        
 
         room.initPlayer(player);
     }
