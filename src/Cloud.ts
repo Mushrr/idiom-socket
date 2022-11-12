@@ -94,12 +94,17 @@ export default class Cloud extends Server implements CloudInterface {
                                 type: room.type,
                                 key: room.key,
                                 needKey: room.needKey
-                            }
+                            },
                         })
                         break;
                     case "canvas":
                         console.log(`[${new Date().toLocaleString()}] - Canvas Room not supported yet`);
                 }
+                console.log(cloud.players.length);
+                cloud.players.forEach(p => {
+                    console.log("已经告知", p.playerName);
+                    p.socket.emit("room:update", cloud.getRoomInfo());
+                })
             }
         })
 
