@@ -98,7 +98,7 @@ export default class Room extends EventEmitter implements RoomInterface {
         this.on("player:join", (player) => {
             // 用户加入之后有很多事情可以做
             const p = this.findPlayer(player.playerId, "playerId");
-            
+
             if (p) {
                 // 向所有用户同步一下消息
                 const allUsers = this.players.map(player => {
@@ -143,7 +143,7 @@ export default class Room extends EventEmitter implements RoomInterface {
     // 处理资源
     // handle resource
     handleResource(resource: PlayerResource | RoomResource) {
-        
+
     }
 
     // utils
@@ -185,8 +185,43 @@ export default class Room extends EventEmitter implements RoomInterface {
     // 等待被重载
     // 初始化简单用户
     initSimplePlayer(player: Player) {
+        let currentResource: string[] = [];
+
+        let isTiming = false;
+
+        const handle = () => {
+            // 处理currentResource
+            let ans: string[] = [];
+            for (let temportData of currentResource) {
+                const lines = temportData.split("\n");
+                for (let i = 0; i < lines.length; i++) {
+                    if (i >= ans.length - 1) {
+                        ans.push(lines[i]);
+                    } else {
+                        ans[i] = lines[i];
+                    }
+                }
+                ans = ans.slice(0, lines.length)
+            }
+
+            currentResource = [];
+            isTiming = false;
+            this.emit("resource:update", ans.join("\n"));
+        }
+
+        const handleUpdate = (data: string) => {
+            if (!isTiming) {
+                isTiming = true;
+                setTimeout(() => {
+                    handle()
+                }, 10);
+            }
+            currentResource.push(data); // 资源加入
+        }
+
         player.socket.on("resource:update", (data) => {
-            this.emit("resource:update", data);
+
+            handleUpdate(data);
         })
     }
 
@@ -197,9 +232,8 @@ export default class Room extends EventEmitter implements RoomInterface {
             if (player.playerId === this.master.playerId) {
                 console.log("[Room] init master player");
                 this.initMasterPlayer(player); // 初始化master
-            } else {
-                this.initSimplePlayer(player); // 初始化simple
             }
+            this.initSimplePlayer(player); // 初始化simple
 
         } else {
             this.initSimplePlayer(player); // 初始化simple
