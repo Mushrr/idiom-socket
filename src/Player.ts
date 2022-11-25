@@ -99,15 +99,25 @@ export default class Player extends EventEmitter implements PlayerInterface {
             console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} is trying to join ${roomJoinData.roomName}`);
             player.currentRoom.cloud.rooms.forEach(room => {
                 // 如果验证通过才能加入
-                if (room.roomId === roomJoinData.roomId && room.key === roomJoinData.key) {
+                console.log(room.key === roomJoinData.key, room.key, roomJoinData.key)
+                if (room.roomId === roomJoinData.roomId) {
                     change = true;
-                    player.switchTo(room); //  用户切换房间
-                    player.socket.emit("player:join", {
-                        roomId: room.roomId,
-                        roomName: room.roomName,
-                        roomKey: room.key,
-                        roomStatus: room.status,
-                    });
+                    if (`${room.key}` === `${roomJoinData.key}`) {
+
+                        if (room.players.length < room.maxPlayers) {
+                            player.switchTo(room); //  用户切换房间
+                            player.socket.emit("player:join", {
+                                roomId: room.roomId,
+                                roomName: room.roomName,
+                                roomKey: room.key,
+                                roomStatus: room.status,
+                            });
+                        } else {
+                            player.socket.emit("room:error", `${room.roomName}的人数已满`);
+                        }
+                    } else {
+                        player.socket.emit("room:error", `${room.roomName}的密码错误`);
+                    }
                 }
             })
             if (!change) {
@@ -117,7 +127,7 @@ export default class Player extends EventEmitter implements PlayerInterface {
             }
         })
 
-        player.socket.on("room:getuser", ({playerId}) => {
+        player.socket.on("room:getuser", ({ playerId }) => {
             // 连接成功
             const allPlayers = player.currentRoom.players.map(p => ({
                 playerName: p.playerName,
@@ -134,7 +144,7 @@ export default class Player extends EventEmitter implements PlayerInterface {
             }
         })
 
-        
+
 
         // 用户可以直接获取房间信息
         player.socket.on("room:get", () => {
@@ -148,7 +158,7 @@ export default class Player extends EventEmitter implements PlayerInterface {
         })
 
         // 使用房间添加对用户行为的监听
-        
+
 
         room.initPlayer(player);
     }
@@ -172,7 +182,7 @@ export default class Player extends EventEmitter implements PlayerInterface {
     // createResource(type: "player" | "room", resource: Buffer, callback: (err: Error, data: any) => void): PlayerResource | RoomResource {
     //     // 依据服务端接收到的buffer，如果前面标志位是一个资源标志的话，就会丢入到这个里生成一个资源实体.
     //     // TODO 生成资源，返回
-        
+
     //     console.log(`[ROOM: ${this.currentRoom.roomName}]Player ${this.playerName} create resource ${type}`);
     // }
     // 用户状态改变

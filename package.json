@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "start": "ts-node index.ts",
+    "dev": "nodemon index.ts",
     "build": "tsc",
     "check": "eslint ."
   },
