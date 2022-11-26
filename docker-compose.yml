@@ -4,5 +4,4 @@ services:
     build: .
     ports:
       - "3000:3000"
-    container_name: idiom-socket
     

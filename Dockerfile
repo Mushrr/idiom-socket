@@ -7,10 +7,9 @@ COPY . .
 
 # Install app dependencies
 
-RUN npm config set registry http://taobao.npm.taobao.org/ \
-    & npm install -g npm@9.1.2 \
-    & npm install
+RUN npm install -g yarn \
+    & yarn install
 
-EXPOSE 3000:3000
+EXPOSE 3000
 
-ENTRYPOINT [ "npm run start" ]
+ENTRYPOINT [ "npm", "run", "start" ]
