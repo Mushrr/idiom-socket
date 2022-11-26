@@ -55,7 +55,7 @@ export default class Room extends EventEmitter implements RoomInterface {
     // 所有参与人
     players: Player[];
     // 房间的状态
-    status: string;
+    status: "waiting" | "started";
     // 房间的创建时间
     createTime: Date;
     // 房间资源

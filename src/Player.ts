@@ -1,9 +1,11 @@
+import { TextResource } from './rooms/text-resource';
 import { EventEmitter } from 'stream';
 import { PlayerResource, RoomResource } from "./Resource";
 import { randomStr } from "mushr";
 import { Socket } from "socket.io"
 import Room, { RoomJoinData } from "./Room"
 import { CreateRoomConfig } from './Cloud';
+import TextShareRoom from './rooms/text-share-room';
 
 interface PlayerInterface {
     // 用户的唯一标识
@@ -99,7 +101,6 @@ export default class Player extends EventEmitter implements PlayerInterface {
             console.log(`[ROOM: ${room.roomName}]Player ${player.playerName} is trying to join ${roomJoinData.roomName}`);
             player.currentRoom.cloud.rooms.forEach(room => {
                 // 如果验证通过才能加入
-                console.log(room.key === roomJoinData.key, room.key, roomJoinData.key)
                 if (room.roomId === roomJoinData.roomId) {
                     change = true;
                     if (`${room.key}` === `${roomJoinData.key}`) {
@@ -112,6 +113,11 @@ export default class Player extends EventEmitter implements PlayerInterface {
                                 roomKey: room.key,
                                 roomStatus: room.status,
                             });
+                            console.log(room.text, room.status);
+                            if (room.status === "started") {
+                                console.log(room.text);
+                                (room.text as TextResource).load(); // 资源加载
+                            }
                         } else {
                             player.socket.emit("room:error", `${room.roomName}的人数已满`);
                         }

@@ -14,6 +14,7 @@ export default class TextShareRoom extends Room {
     archive: Archive;
     autoArchive: boolean;
     type: string = "text";
+    isStarted: boolean = false;
     constructor(roomName: string, maxPlayers: number, key: number | null, master: Player | null, cloud: Cloud, text: RoomResource) {
         super(roomName, maxPlayers, key, master, cloud); // 初始化
         this.text = text;
@@ -37,6 +38,7 @@ export default class TextShareRoom extends Room {
 
 
         this.on("master:start", () => {
+            this.status = "started";
             console.log(`[Room] ${this.roomId}:${this.roomName} start`);
             (this.text as TextResource).load(); // 资源加载
         })
